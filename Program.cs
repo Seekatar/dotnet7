@@ -1,13 +1,8 @@
-using dotnet7;
-using dotnet7.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-const string AdminPolicyName = "adminPolicy";
-const string AdminRoleName = "admin";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// .NET7 added for authN/Z
+// .NET 7 added for problem details
+builder.Services.AddProblemDetails();
+
+// .NET 7 added for AUTHN/Z
+const string AdminPolicyName = "adminPolicy";
+const string AdminRoleName = "admin";
+
 builder.Services.AddAuthentication().AddJwtBearer(); // since only Auth mechanism, don't need to set it as the default
 builder.Services.AddAuthorizationBuilder().AddPolicy(AdminPolicyName, policy => policy.RequireRole(AdminRoleName)); // RequireClaim
 
@@ -24,7 +25,10 @@ builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
+builder.Services.AddSingleton<IService,TestService>();
 builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySchemes = true);
+// end .NET 7 added for authN/Z
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -56,46 +60,86 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-var client = app.MapGroup("/derived")
+// .NET 7 added
+// .NET 7 Groups & simplified AUTHN/Z
+var client = app.MapGroup("/net7")
     .RequireAuthorization(AdminPolicyName)
     .EnableOpenApiWithAuthentication()
     .WithOpenApi();
 
-client.MapGet("/{id:int}", Results<Ok<Step>, NotFound> (int id) =>
+client.MapGet("/step/{id:int}", Results<Ok<Step>, NotFound> (int id) =>
 {
-    if (id < 100) return TypedResults.NotFound();
+    if (id < 100) throw new ArgumentException(nameof(id));
 
     var step = new Step();
     step.Init();
-    var s = JsonSerializer.Serialize(step);
-    var step2 = JsonSerializer.Deserialize<Step>(s);
-    foreach (var item in step2.Variables)
-    {
-        app.Logger.LogInformation($"Type is {item.Type switch
-        {
-            _ => item.GetType().Name
-        }}");
-    }
     return TypedResults.Ok(step); // TypedResult new in .NET 7
+})
+.WithName("GetStep");
+
+client.MapGet("/derived/{id}", Results<Ok<VariableBase>, NotFound> (int id, IService service) =>
+{
+    var variable = service.GetVariable(id);
+    if (variable is null) return TypedResults.NotFound();
+    return TypedResults.Ok(variable);
 })
 .WithName("GetDerived");
 
-client.MapGet("/", Results<Ok<Step>,NotFound> () =>
+client.MapPost("/derived", Results<Created<VariableBase>, BadRequest>(VariableBase variable, IService service, HttpRequest request) => {
+
+    int id = service.Add(variable);
+
+    return TypedResults.Created($"{request.Path}/{id}",variable);
+})
+.WithName("AddDerived");
+
+client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 {
-    var step = new Step();
-    step.Init();
-    var s = JsonSerializer.Serialize(step);
-    var step2 = JsonSerializer.Deserialize<Step>(s);
-    foreach (var item in step2.Variables)
-    {
-        app.Logger.LogInformation($"Type is {item.Type switch
+     return id switch {
+        1 => TypedResults.Ok("""This string has "quotes" in it"""),
+        2 => TypedResults.Ok("""
+        This
+        string
+        has
+        "quotes"
+        in
+        it
+        each
+        word
+        separate
+        indented
+"""),
+        3 => TypedResults.Ok("""
+                This
+                string
+                has
+                "quotes"
+                in
+                it
+                each
+                word
+                separate
+                """),
+        4 => TypedResults.Ok(""""This string has """triple quotes""" in it""""),
+        5 => TypedResults.Ok($"""
+        This string has {
+            id switch {
+                1 => "1",
+                _ => "Not 1"
+            }
+        } in it with expression on multiple lines
+        """),
+        6 => TypedResults.Ok($$"""
         {
-            _ => item.GetType().Name
-        }}");
-    }
-    return TypedResults.Ok(step); // TypedResult new in .NET 7
+            "id": {{id}},
+            "name": "Test"
+        }
+        """),
+        _ => TypedResults.NotFound()
+    };
 })
 .WithName("ListDerived");
+// end .NET 7 added
 
 app.Run();
 

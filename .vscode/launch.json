@@ -9,6 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
+            // "preLaunchTask": "watch",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net7.0/dotnet7.dll",
             "args": [],
