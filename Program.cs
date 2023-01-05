@@ -1,5 +1,7 @@
+using FeatureFlags;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.FeatureManagement;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,6 +15,9 @@ builder.Services.AddSwaggerGen();
 
 // .NET 7 added for problem details
 builder.Services.AddProblemDetails();
+
+// added for feature flags
+builder.Services.AddFeatureManagement();
 
 // .NET 7 added for AUTHN/Z
 const string AdminPolicyName = "adminPolicy";
@@ -29,6 +34,7 @@ builder.Services.AddSingleton<IService,TestService>();
 builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySchemes = true);
 // end .NET 7 added for authN/Z
 
+builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("NewFeature");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -140,6 +146,11 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 })
 .WithName("ListDerived");
 // end .NET 7 added
+
+app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
+{
+    return (await feature.GetFeature()).GetResult();
+});
 
 app.Run();
 
