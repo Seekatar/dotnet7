@@ -39,9 +39,9 @@ internal class FeatureToggleConfigurationProvider : ConfigurationProvider // MS 
         bool ret = base.TryGet(key, out value);
         if (key.StartsWith("FeatureManagement:"))
             Console.WriteLine($">>>>>> Getting {key}");
-        if ((key.StartsWith("FeatureManagement:") || key.StartsWith("WhatTimeIsIt")) && !ret)
-            throw new Exception($"Feature {key} not found");
-        return true;
+        //if ((key.StartsWith("FeatureManagement:") || key.StartsWith("WhatTimeIsIt")) && !ret)
+        //    throw new Exception($"Feature {key} not found");
+        return ret;
     }
 
     public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
@@ -54,9 +54,9 @@ internal class FeatureToggleConfigurationProvider : ConfigurationProvider // MS 
     public override void Load()
     {
         Data["WhatTimeIsIt"] = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-        //Data["FeatureManagement:TEST.KEYC"] = "true";
-        Data["FeatureManagement:TEST.KEYC:EnabledFor:0:Name"] = "FilterMe2";
-
+        Data["FeatureManagement:TEST.KEYC"] = "true";
+        Data["FeatureManagement:TEST.KEYD:EnabledFor:0:Name"] = "FilterMe";
+        
         // var toggles = FeatureToggleListener.GetToggles( _options).Result;
 
         // toggles.ForEach(t => Data["FeatureManagement:"+t.Name] = t.IsEnabled.ToString());

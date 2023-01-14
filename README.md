@@ -10,6 +10,7 @@
   - [Error with IProblemDetails](#error-with-iproblemdetails)
   - [Calling it with Auth](#calling-it-with-auth)
 - [/weatherforecast Endpoint](#weatherforecast-endpoint)
+- [FeatureManagement Test](#featuremanagement-test)
 
 This was created with this command
 
@@ -186,3 +187,15 @@ irm  "http://localhost:$port/net7/step/1" -Headers $headers -SkipHttpErrorCheck
 ## /weatherforecast Endpoint
 
 This is from the generated code and is not secure
+
+## FeatureManagement Test
+
+| Key       | SetIn                      | Value               |
+| --------- | -------------------------- | ------------------- |
+| TEST.KEYA | appsettings.json           | true                |
+| TEST.KEYB | appsettings.json           | Enabled for context |
+| TEST.KEYC | FeatureToggleConfiguration | true                |
+| TEST.KEYD | FeatureToggleConfiguration | Enabled for context |
+| TEST.KEYE | Environment                | true                |
+| TEST.KEYF | Environment                | Enabled for context |
+

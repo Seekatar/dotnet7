@@ -6,6 +6,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+Environment.SetEnvironmentVariable("FeatureManagement__TEST.KEYE", "true");
+Environment.SetEnvironmentVariable("FeatureManagement__TEST.KEYF__EnabledFor__0__Name", "FilterMe");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -17,7 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
 
 // added for feature flags
-//builder.Configuration.AddFeatureToggle(); // add my IConfiguration provider
+builder.Configuration.AddFeatureToggle(); // add my IConfiguration provider
 
 builder.Services.Configure<FeatureManagementOptions>(options =>
 {
@@ -165,18 +168,18 @@ app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
 app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
 {
     var result = new Dictionary<string, string>();
-    result.Add("TEST.KEYC", (await fm.IsEnabledAsync("TEST.KEYC")).ToString());
-    try
+    for (char x = 'A'; x < 'H'; x++)
     {
-        result.Add("TEST.KEYQ", (await fm.IsEnabledAsync("TEST.KEYQ")).ToString());
+        try
+        {
+            result.Add($"TEST.KEY{x}", (await fm.IsEnabledAsync($"TEST.KEY{x}",new MyFeatureContext())).ToString());
+        }
+        catch (Exception ex)
+        {
+            result.Add($"TEST.KEY{x}", $"Exception! {ex.Message}");
+        }
     }
-    catch
-    {
-        result.Add("TEST.KEYQ", "Exception!");
-    }
-
     result.Add("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration");
-    result.Add("TEST.KEYC context", (await fm.IsEnabledAsync("TEST.KEYC", new MyFeatureContext())).ToString());
     try
     {
         result.Add("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration");
