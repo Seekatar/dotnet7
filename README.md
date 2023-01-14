@@ -190,12 +190,12 @@ This is from the generated code and is not secure
 
 ## FeatureManagement Test
 
-| Key       | SetIn                      | Value               |
-| --------- | -------------------------- | ------------------- |
-| TEST.KEYA | appsettings.json           | true                |
-| TEST.KEYB | appsettings.json           | Enabled for context |
-| TEST.KEYC | FeatureToggleConfiguration | true                |
-| TEST.KEYD | FeatureToggleConfiguration | Enabled for context |
-| TEST.KEYE | Environment                | true                |
-| TEST.KEYF | Environment                | Enabled for context |
+| Key        | SetIn                      | Value               |
+| ---------- | -------------------------- | ------------------- |
+| PLAIN.KEYA | appsettings.json           | true                |
+| CNTXT.KEYA | appsettings.json           | Enabled for context |
+| PLAIN.KEYB | FeatureToggleConfiguration | true                |
+| CNTXT.KEYB | FeatureToggleConfiguration | Enabled for context |
+| PLAIN.KEYC | Environment                | true                |
+| CNTXT.KEYC | Environment                | Enabled for context |
 

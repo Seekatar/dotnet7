@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-Environment.SetEnvironmentVariable("FeatureManagement__TEST.KEYE", "true");
-Environment.SetEnvironmentVariable("FeatureManagement__TEST.KEYF__EnabledFor__0__Name", "FilterMe");
+Environment.SetEnvironmentVariable("FeatureManagement__PLAIN.KEYC", "true");
+Environment.SetEnvironmentVariable("FeatureManagement__CNTXT.KEYC__EnabledFor__0__Name", "FilterMe");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.Configure<FeatureManagementOptions>(options =>
     options.IgnoreMissingFeatures = false;
     options.IgnoreMissingFeatureFilters = false;
 });
+builder.Services.AddSingleton<IFeatureFlags,FeatureFlagService>();
 builder.Services.AddFeatureManagement().AddFeatureFilter<FeatureFilter>(); // add my feature filter
 
 
@@ -165,29 +167,39 @@ app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
     return (await feature.GetFeature()).GetResult();
 });
 
+var set = true;
 app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
 {
     var result = new Dictionary<string, string>();
-    for (char x = 'A'; x < 'H'; x++)
+    for (char x = 'A'; x < 'E'; x++)
     {
         try
         {
-            result.Add($"TEST.KEY{x}", (await fm.IsEnabledAsync($"TEST.KEY{x}",new MyFeatureContext())).ToString());
+            result.Add($"PLAIN.KEY{x}", (await fm.IsEnabledAsync($"PLAIN.KEY{x}")).ToString());
         }
         catch (Exception ex)
         {
-            result.Add($"TEST.KEY{x}", $"Exception! {ex.Message}");
+            result.Add($"PLAIN.KEY{x}", $"Exception! {ex.Message}");
         }
     }
+    for (char x = 'A'; x < 'E'; x++)
+    {
+        try
+        {
+            result.Add($"CNTXT.KEY{x} Context", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", new MyFeatureContext() { EnableMe = set })).ToString());
+        }
+        catch (Exception ex)
+        {
+            result.Add($"CNTXT.KEY{x} Context", $"Exception! {ex.Message}");
+        }
+    }
+    result.Add("Set is", set.ToString());
+    set = !set;
+
+    // Test IConfiguration not found
     result.Add("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration");
-    try
-    {
-        result.Add("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration");
-    }
-    catch
-    {
-        result.Add("WhatTimeIsItNot", "Exception!");
-    }
+    result.Add("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration"); // never throws, just returns null
+
     return result;
 });
 

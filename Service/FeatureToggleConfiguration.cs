@@ -34,28 +34,28 @@ internal class FeatureToggleConfigurationProvider : ConfigurationProvider // MS 
         _options = options;
     }
 
-    public override bool TryGet(string key, out string? value)
-    {
-        bool ret = base.TryGet(key, out value);
-        if (key.StartsWith("FeatureManagement:"))
-            Console.WriteLine($">>>>>> Getting {key}");
-        //if ((key.StartsWith("FeatureManagement:") || key.StartsWith("WhatTimeIsIt")) && !ret)
-        //    throw new Exception($"Feature {key} not found");
-        return ret;
-    }
+    //public override bool TryGet(string key, out string? value)
+    //{
+    //    bool ret = base.TryGet(key, out value);
+    //    if (key.StartsWith("FeatureManagement:"))
+    //        Console.WriteLine($">>>>>> Getting {key}");
+    //    //if ((key.StartsWith("FeatureManagement:") || key.StartsWith("WhatTimeIsIt")) && !ret)
+    //    //    throw new Exception($"Feature {key} not found");
+    //    return ret;
+    //}
 
-    public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
-    {
-        if ((!parentPath?.StartsWith("Logging") ?? false) && (!parentPath?.StartsWith("Kestrel") ?? false) )
-            Console.WriteLine($"####### Getting child '{parentPath}' >> {string.Join(",",earlierKeys)}");
-        return base.GetChildKeys(earlierKeys, parentPath);
-    }
+    //public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+    //{
+    //    if ((!parentPath?.StartsWith("Logging") ?? false) && (!parentPath?.StartsWith("Kestrel") ?? false) )
+    //        Console.WriteLine($"####### Getting child '{parentPath}' >> {string.Join(",",earlierKeys)}");
+    //    return base.GetChildKeys(earlierKeys, parentPath);
+    //}
 
     public override void Load()
     {
         Data["WhatTimeIsIt"] = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-        Data["FeatureManagement:TEST.KEYC"] = "true";
-        Data["FeatureManagement:TEST.KEYD:EnabledFor:0:Name"] = "FilterMe";
+        Data["FeatureManagement:PLAIN.KEYB"] = "true";
+        Data["FeatureManagement:CNTXT.KEYB:EnabledFor:0:Name"] = "FilterMe";
         
         // var toggles = FeatureToggleListener.GetToggles( _options).Result;
 
