@@ -17,7 +17,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
 
 // added for feature flags
-builder.Services.AddFeatureManagement();
+//builder.Configuration.AddFeatureToggle(); // add my IConfiguration provider
+
+builder.Services.Configure<FeatureManagementOptions>(options =>
+{
+    options.IgnoreMissingFeatures = false;
+    options.IgnoreMissingFeatureFilters = false;
+});
+builder.Services.AddFeatureManagement().AddFeatureFilter<FeatureFilter>(); // add my feature filter
+
 
 // .NET 7 added for AUTHN/Z
 const string AdminPolicyName = "adminPolicy";
@@ -30,9 +38,10 @@ builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
-builder.Services.AddSingleton<IService,TestService>();
+builder.Services.AddSingleton<IService, TestService>();
 builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySchemes = true);
 // end .NET 7 added for authN/Z
+
 
 builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("NewFeature");
 var app = builder.Build();
@@ -91,17 +100,19 @@ client.MapGet("/derived/{id}", Results<Ok<VariableBase>, NotFound> (int id, ISer
 })
 .WithName("GetDerived");
 
-client.MapPost("/derived", Results<Created<VariableBase>, BadRequest>(VariableBase variable, IService service, HttpRequest request) => {
+client.MapPost("/derived", Results<Created<VariableBase>, BadRequest> (VariableBase variable, IService service, HttpRequest request) =>
+{
 
     int id = service.Add(variable);
 
-    return TypedResults.Created($"{request.Path}/{id}",variable);
+    return TypedResults.Created($"{request.Path}/{id}", variable);
 })
 .WithName("AddDerived");
 
 client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 {
-     return id switch {
+    return id switch
+    {
         1 => TypedResults.Ok("""This string has "quotes" in it"""),
         2 => TypedResults.Ok("""
         This
@@ -128,12 +139,11 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
                 """),
         4 => TypedResults.Ok(""""This string has """triple quotes""" in it""""),
         5 => TypedResults.Ok($"""
-        This string has {
-            id switch {
-                1 => "1",
-                _ => "Not 1"
-            }
-        } in it with expression on multiple lines
+        This string has {id switch
+        {
+            1 => "1",
+            _ => "Not 1"
+        }} in it with expression on multiple lines
         """),
         6 => TypedResults.Ok($$"""
         {
@@ -150,6 +160,32 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
 {
     return (await feature.GetFeature()).GetResult();
+});
+
+app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
+{
+    var result = new Dictionary<string, string>();
+    result.Add("TEST.KEYC", (await fm.IsEnabledAsync("TEST.KEYC")).ToString());
+    try
+    {
+        result.Add("TEST.KEYQ", (await fm.IsEnabledAsync("TEST.KEYQ")).ToString());
+    }
+    catch
+    {
+        result.Add("TEST.KEYQ", "Exception!");
+    }
+
+    result.Add("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration");
+    result.Add("TEST.KEYC context", (await fm.IsEnabledAsync("TEST.KEYC", new MyFeatureContext())).ToString());
+    try
+    {
+        result.Add("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration");
+    }
+    catch
+    {
+        result.Add("WhatTimeIsItNot", "Exception!");
+    }
+    return result;
 });
 
 app.Run();
