@@ -1,4 +1,4 @@
-using FeatureFlags;
+using dotnet7.FeatureFlags;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 Environment.SetEnvironmentVariable("FeatureManagement__PLAIN.KEYC", "true");
-Environment.SetEnvironmentVariable("FeatureManagement__CNTXT.KEYC__EnabledFor__0__Name", "FilterMe");
+Environment.SetEnvironmentVariable("FeatureManagement__CNTXT.KEYC__EnabledFor__0__Name", "TestFeatureFilter");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,16 +20,8 @@ builder.Services.AddSwaggerGen();
 // .NET 7 added for problem details
 builder.Services.AddProblemDetails();
 
-// added for feature flags
-builder.Configuration.AddFeatureToggle(); // add my IConfiguration provider
-
-builder.Services.Configure<FeatureManagementOptions>(options =>
-{
-    options.IgnoreMissingFeatures = false;
-    options.IgnoreMissingFeatureFilters = false;
-});
-builder.Services.AddSingleton<IFeatureFlags,FeatureFlagService>();
-builder.Services.AddFeatureManagement().AddFeatureFilter<FeatureFilter>(); // add my feature filter
+// .NET 7 added for feature flags
+builder.Services.AddFeatureFlags(builder.Configuration);
 
 
 // .NET 7 added for AUTHN/Z
@@ -186,7 +178,7 @@ app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
     {
         try
         {
-            result.Add($"CNTXT.KEY{x} Context", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", new MyFeatureContext() { EnableMe = set })).ToString());
+            result.Add($"CNTXT.KEY{x} Context", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", new FeatureContext() { EnableMe = set })).ToString());
         }
         catch (Exception ex)
         {

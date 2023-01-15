@@ -11,6 +11,8 @@
   - [Calling it with Auth](#calling-it-with-auth)
 - [/weatherforecast Endpoint](#weatherforecast-endpoint)
 - [FeatureManagement Test](#featuremanagement-test)
+  - [Provider](#provider)
+  - [Filter](#filter)
 
 This was created with this command
 
@@ -194,8 +196,22 @@ This is from the generated code and is not secure
 | ---------- | -------------------------- | ------------------- |
 | PLAIN.KEYA | appsettings.json           | true                |
 | CNTXT.KEYA | appsettings.json           | Enabled for context |
-| PLAIN.KEYB | FeatureToggleConfiguration | true                |
-| CNTXT.KEYB | FeatureToggleConfiguration | Enabled for context |
+| PLAIN.KEYB | FeatureFlagConfiguration | true                |
+| CNTXT.KEYB | FeatureFlagConfiguration | Enabled for context |
 | PLAIN.KEYC | Environment                | true                |
 | CNTXT.KEYC | Environment                | Enabled for context |
+
+### Provider
+
+`Load` gets all the keys using options passed in and calls sets the filter on all of them
+
+```csharp
+ Data[$"FeatureManagement:{key}:EnabledFor:0:Name"] = "TestFeatureFilter";
+```
+
+As any new keys get added, update `Data`
+
+### Filter
+
+Gets the IFeatureFlags injected in and on EvaluateAsync checks the context for the key
 

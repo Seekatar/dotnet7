@@ -1,10 +1,22 @@
 using Microsoft.FeatureManagement;
 
-namespace FeatureFlags;
+namespace dotnet7.FeatureFlags;
 
+/// <summary>
+/// Register singletons that can change depending on a feature flag
+/// </summary>
 static class RegisterFeatureExtensions
 {
-    public static IServiceCollection AddSingletonFeature<T,TA,TB>(this IServiceCollection services, string flag) where T : class where TA : class, T where TB: class, T
+    /// <summary>
+    /// Register a singleton that can change depending on a feature flag
+    /// </summary>
+    /// <typeparam name="T">Interface that will be injected</typeparam>
+    /// <typeparam name="TA">Instance when the flag is true</typeparam>
+    /// <typeparam name="TB">Instance when the flag is false </typeparam>
+    /// <param name="services"></param>
+    /// <param name="flag">flag to evaluate</param>
+    /// <returns></returns>
+    public static IServiceCollection AddSingletonFeature<T, TA, TB>(this IServiceCollection services, string flag) where T : class where TA : class, T where TB : class, T
     {
         services.AddSingleton<TA>();
         services.AddSingleton<TB>();
@@ -16,13 +28,6 @@ static class RegisterFeatureExtensions
         });
         return services;
     }
-}
-
-public struct FeatureContext {
-    public string? ClientId { get; set; }
-    public int? MarketId { get; set; }
-    public string? Role { get; set; }
-    public long? UserId { get; set; }
 }
 
 interface IFeature<T> where T : class
