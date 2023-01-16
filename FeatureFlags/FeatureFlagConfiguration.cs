@@ -20,12 +20,17 @@ internal class FeatureFlagConfigurationSource : IConfigurationSource
 internal class FeatureFlagConfigurationProvider : ConfigurationProvider // MS helper to do most of IConfigurationProvider impl
 {
     private readonly FeatureFlagOptions _options;
+    private static FeatureFlagConfigurationProvider? _instance;
     public const string FeatureMangementPrefix = "FeatureManagement";
-    public const string FilterSuffix = "EnabledFor:0:Name";
+    public const string ContextualFilterSuffix = "EnabledFor:0:Name";
+    public const string FilterSuffix = "EnabledFor:1:Name";
 
+    public static FeatureFlagConfigurationProvider? Instance => _instance;
+    
     public FeatureFlagConfigurationProvider(FeatureFlagOptions options)
     {
         _options = options;
+        _instance = this;
     }
 
     public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
@@ -52,6 +57,7 @@ internal class FeatureFlagConfigurationProvider : ConfigurationProvider // MS he
         var toggles = FeatureFlagService.GetFlagNames( _options).Result;
         lock (Data)
         {
+            toggles.ForEach(t => Data[$"{FeatureMangementPrefix}:{t}:{ContextualFilterSuffix}"] = ContextualFeatureFilter.FilterName);
             toggles.ForEach(t => Data[$"{FeatureMangementPrefix}:{t}:{FilterSuffix}"] = FeatureFilter.FilterName);
 
             // add some test data for IConfiguration and FeatureManagement
@@ -59,7 +65,7 @@ internal class FeatureFlagConfigurationProvider : ConfigurationProvider // MS he
             Data[$"{FeatureMangementPrefix}:PLAIN.KEYB"] = "true"; // not filtered
         }
 
-        var timer = new System.Timers.Timer(TimeSpan.FromSeconds(5).TotalMilliseconds);
+        var timer = new System.Timers.Timer(TimeSpan.FromSeconds(2).TotalMilliseconds);
         timer.Elapsed += (sender, args) =>
         {
             lock (Data)
@@ -72,4 +78,9 @@ internal class FeatureFlagConfigurationProvider : ConfigurationProvider // MS he
         timer.Enabled = true;
     }
 
+    internal void AddFeature(string t)
+    {
+        Data[$"{FeatureMangementPrefix}:{t}:{ContextualFilterSuffix}"] = ContextualFeatureFilter.FilterName;
+        Data[$"{FeatureMangementPrefix}:{t}:{FilterSuffix}"] = FeatureFilter.FilterName;
+    }
 }

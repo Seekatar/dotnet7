@@ -4,18 +4,20 @@ namespace dotnet7.FeatureFlags
 {
     public static class FeatureFlagExtensions
     {
-        public static IServiceCollection AddFeatureFlags(this IServiceCollection services, IConfigurationBuilder configuration)
+        public static IServiceCollection AddFeatureFlags(this IServiceCollection services, IConfigurationBuilder configuration, bool ignoreMissingFeatures = false)
         {
             configuration.AddFeatureFlag(); // add my IConfiguration provider
 
             services.Configure<FeatureManagementOptions>(options =>
             {
-                options.IgnoreMissingFeatures = false;
+                options.IgnoreMissingFeatures = ignoreMissingFeatures;
                 options.IgnoreMissingFeatureFilters = false;
             });
             services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
-            services.AddFeatureManagement().AddFeatureFilter<FeatureFilter>(); // add my feature filter
+            services.AddFeatureManagement()
+                .AddFeatureFilter<ContextualFeatureFilter>()
+                .AddFeatureFilter<FeatureFilter>(); 
 
             return services;
         }

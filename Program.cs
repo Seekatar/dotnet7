@@ -3,12 +3,15 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Collections.Specialized;
 using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-Environment.SetEnvironmentVariable("FeatureManagement__PLAIN.KEYC", "true");
-Environment.SetEnvironmentVariable("FeatureManagement__CNTXT.KEYC__EnabledFor__0__Name", "TestFeatureFilter");
+// add test values for feature management configured in env
+Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__PLAIN.KEYC", "true");
+Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__CNTXT.KEYC__EnabledFor__0__Name", ContextualFeatureFilter.FilterName);
+Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__CNTXT.KEYC__EnabledFor__1__Name", FeatureFilter.FilterName);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +25,6 @@ builder.Services.AddProblemDetails();
 
 // .NET 7 added for feature flags
 builder.Services.AddFeatureFlags(builder.Configuration);
-
 
 // .NET 7 added for AUTHN/Z
 const string AdminPolicyName = "adminPolicy";
@@ -162,37 +164,62 @@ app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
 var set = true;
 app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
 {
-    var result = new Dictionary<string, string>();
+    var result = new List<KeyValuePair<string, string>>();
     for (char x = 'A'; x < 'E'; x++)
     {
         try
         {
-            result.Add($"PLAIN.KEY{x}", (await fm.IsEnabledAsync($"PLAIN.KEY{x}")).ToString());
+            result.Add(new KeyValuePair<string, string>($"PLAIN.KEY{x}", (await fm.IsEnabledAsync($"PLAIN.KEY{x}")).ToString()));
         }
         catch (Exception ex)
         {
-            result.Add($"PLAIN.KEY{x}", $"Exception! {ex.Message}");
+            result.Add(new KeyValuePair<string, string>($"PLAIN.KEY{x}", $"Exception! {ex.Message}"));
         }
     }
-    for (char x = 'A'; x < 'E'; x++)
-    {
-        try
-        {
-            result.Add($"CNTXT.KEY{x} Context", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", new FeatureContext() { EnableMe = set })).ToString());
-        }
-        catch (Exception ex)
-        {
-            result.Add($"CNTXT.KEY{x} Context", $"Exception! {ex.Message}");
-        }
-    }
-    result.Add("Set is", set.ToString());
-    set = !set;
 
     // Test IConfiguration not found
-    result.Add("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration");
-    result.Add("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration"); // never throws, just returns null
+    result.Add(new KeyValuePair<string, string>("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration"));
+    result.Add(new KeyValuePair<string, string>("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration")); // never throws, just returns null
 
-    return result;
+    return result.OrderBy(x => x.Key).ToArray();
+});
+
+app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
+{
+    var result = new List<KeyValuePair<string, string>>();
+    var fc = new FeatureContext() { EnableMe = set };
+    for (char x = 'A'; x < 'E'; x++)
+    {
+        try
+        {
+            result.Add(new KeyValuePair<string, string>($"Context CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", fc)).ToString()));
+        }
+        catch (Exception ex)
+        {
+            result.Add(new KeyValuePair<string, string>($"Context CNTXT.KEY{x}", $"Exception! {ex.Message}"));
+        }
+    }
+    result.Add(new KeyValuePair<string, string>("Set is", set.ToString()));
+    set = !set;
+
+    return result.OrderBy(x => x.Key).ToArray();
+});
+
+app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) =>
+{
+    var result = new List<KeyValuePair<string, string>>();
+    for (char x = 'A'; x < 'E'; x++)
+    {
+        try
+        {
+            result.Add(new KeyValuePair<string, string>($"No context CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}")).ToString()));
+        }
+        catch (Exception ex)
+        {
+            result.Add(new KeyValuePair<string, string>($"No context CNTXT.KEY{x}", $"Exception! {ex.Message}"));
+        }
+    }
+    return result.OrderBy(x => x.Key).ToArray();
 });
 
 app.Run();
