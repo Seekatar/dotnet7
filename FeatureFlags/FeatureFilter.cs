@@ -5,20 +5,11 @@ namespace dotnet7.FeatureFlags;
 [FilterAlias(FilterName)]
 public class FeatureFilter : IFeatureFilter
 {
-    private readonly IFeatureFlagService _featureFlags;
-    private readonly ILogger<ContextualFeatureFilter> _logger;
     public const string FilterName = "TestFeatureFilter";
 
-    public FeatureFilter(IFeatureFlagService featureFlags, ILogger<ContextualFeatureFilter> logger)
+    public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext)
     {
-        _featureFlags = featureFlags;
-        _logger = logger;
-    }
-
-    public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext)
-    {
-        _logger.LogInformation("FeatureFiles.EvaluateAsync: {featureName}", evaluationContext.FeatureName);
-        return await _featureFlags.IsEnabled(evaluationContext.FeatureName);
+        throw new Exception("Must always use a context");
     }
 }
 
