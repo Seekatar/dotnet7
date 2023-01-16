@@ -7,9 +7,18 @@ public class FeatureFilter : IFeatureFilter
 {
     public const string FilterName = "TestFeatureFilter";
 
+    private readonly ILogger<ContextualFeatureFilter> _logger;
+    
+    public FeatureFilter(ILogger<ContextualFeatureFilter> logger)
+    {
+        _logger = logger;
+    }
+    
     public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext)
     {
-        throw new Exception("Must always use a context");
+        var ret = false;
+        _logger.LogInformation(">>>> FeatureFilter.EvaluateAsync: {featureName} {ret}", evaluationContext.FeatureName, ret );
+        return Task.FromResult(ret); // don't need this filter if always return false since FM pretty much ignores it
     }
 }
 
@@ -29,7 +38,7 @@ public class ContextualFeatureFilter : IContextualFeatureFilter<FeatureContext>
     public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, FeatureContext context)
     {
         var ret = await _featureFlags.IsEnabled(evaluationContext.FeatureName, context);
-        _logger.LogInformation(">>>> FeatureFiles.EvaluateAsync: {featureName} {enableMe} {ret} for {client} {market}", evaluationContext.FeatureName, context.EnableMe, ret, context.ClientId, context.MarketId);
+        _logger.LogInformation(">>>> ContextualFeatureFilter.EvaluateAsync: {featureName} {enableMe} {ret} for {client} {market}", evaluationContext.FeatureName, context.EnableMe, ret, context.ClientId, context.MarketId);
         return ret;
     }
 }
