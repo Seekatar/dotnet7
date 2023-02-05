@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace dotnet7.Models;
 
@@ -26,8 +27,11 @@ internal class VariableBase
         Type = type;
     }
 
-     public VariableType Type { get; set; }
-     public string Message { get; set; } = "Set in base";
+    [DefaultValue(VariableType.Boolean)]
+    public VariableType Type { get; set; }
+
+    [DefaultValue("Set to something")]
+    public string Message { get; set; } = "Set in base";
 }
 
 internal class VariableString : VariableBase
@@ -74,9 +78,9 @@ internal class Step
         Variables.Add(new VariableBool { DerivedPropertyBool = true });
         Variables.Add(new VariableInt { DerivedPropertyInt = 123 });
         Variables.Add(new VariableString { DerivedPropertyString = $"""this "is" on a single line""" });
-        Variables.Add(new VariableDate { DerivedPropertyDateOnly = DateOnly.FromDateTime(DateTime.UtcNow)});
-        Variables.Add(new VariableTime { DerivedPropertyTimeOnly = TimeOnly.FromDateTime(DateTime.UtcNow)});
-        Variables.Add(new VariableDateTime { DerivedPropertyDateTime = DateTime.UtcNow});
+        Variables.Add(new VariableDate { DerivedPropertyDateOnly = DateOnly.FromDateTime(DateTime.UtcNow) });
+        Variables.Add(new VariableTime { DerivedPropertyTimeOnly = TimeOnly.FromDateTime(DateTime.UtcNow) });
+        Variables.Add(new VariableDateTime { DerivedPropertyDateTime = DateTime.UtcNow });
     }
 }
 

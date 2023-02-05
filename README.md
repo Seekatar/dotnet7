@@ -192,15 +192,15 @@ This is from the generated code and is not secure
 
 ## FeatureManagement Test
 
-| Key        | SetIn                      | Value               |
-| ---------- | -------------------------- | ------------------- |
-| PLAIN.KEYA | appsettings.json           | true                |
-| CNTXT.KEYA | appsettings.json           | Enabled for context |
-| PLAIN.KEYB | FeatureFlagConfiguration   | true                |
-| CNTXT.KEYB | FeatureFlagConfiguration   | Enabled for context |
-| PLAIN.KEYC | Environment                | true                |
-| CNTXT.KEYC | Environment                | Enabled for context |
-| CNTXT.KEYD | Added after 10 seconds[^1] | Enabled for context |
+| Key        | SetIn                          | Value               |
+| ---------- | ------------------------------ | ------------------- |
+| PLAIN.KEYA | appsettings.json               | true                |
+| CNTXT.KEYA | appsettings.json               | Enabled for context |
+| PLAIN.KEYB | FeatureFlagConfiguration class | true                |
+| CNTXT.KEYB | FeatureFlagConfiguration class | Enabled for context |
+| PLAIN.KEYC | Environment                    | true                |
+| CNTXT.KEYC | Environment                    | Enabled for context |
+| CNTXT.KEYD | Added after 10 seconds[^1]     | Enabled for context |
 
 [^1]: This is to test the exception if not found
 
