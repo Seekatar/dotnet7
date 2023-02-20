@@ -11,26 +11,52 @@ static class RegisterFeatureExtensions
     /// Register a singleton that can change depending on a feature flag
     /// </summary>
     /// <typeparam name="T">Interface that will be injected</typeparam>
-    /// <typeparam name="TA">Instance when the flag is true</typeparam>
-    /// <typeparam name="TB">Instance when the flag is false </typeparam>
+    /// <typeparam name="TEnabled">Instance when the flag is true</typeparam>
+    /// <typeparam name="TDisabled">Instance when the flag is false </typeparam>
     /// <param name="services"></param>
-    /// <param name="flag">flag to evaluate</param>
+    /// <param name="flagName">flag to evaluate</param>
     /// <returns></returns>
-    public static IServiceCollection AddSingletonFeature<T, TA, TB>(this IServiceCollection services, string flag) where T : class where TA : class, T where TB : class, T
+    public static IServiceCollection AddSingletonFeature<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
     {
-        services.AddSingleton<TA>();
-        services.AddSingleton<TB>();
+        services.AddSingleton<TEnabled>();
+        services.AddSingleton<TDisabled>();
 
         services.AddSingleton<IFeature<T>>(sp =>
         {
             var provider = sp.GetRequiredService<IFeatureManager>();
-            return new Feature<T>(provider, flag, sp.GetRequiredService<TA>(), sp.GetRequiredService<TB>());
+            return new Feature<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
+        });
+        return services;
+    }
+
+    /// <summary>
+    /// Register a scoped instance that can change depending on a feature flag
+    /// </summary>
+    /// <typeparam name="T">Interface that will be injected</typeparam>
+    /// <typeparam name="TEnabled">Instance when the flag is true</typeparam>
+    /// <typeparam name="TDisabled">Instance when the flag is false </typeparam>
+    /// <param name="services"></param>
+    /// <param name="flagName">flag to evaluate</param>
+    /// <returns></returns>
+    public static IServiceCollection AddScopedFeature<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
+    {
+        services.AddScoped<TEnabled>();
+        services.AddScoped<TDisabled>();
+
+        services.AddScoped<IFeature<T>>(sp =>
+        {
+            var provider = sp.GetRequiredService<IFeatureManagerSnapshot>();
+            return new Feature<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
         });
         return services;
     }
 }
 
-interface IFeature<T> where T : class
+/// <summary>
+/// Wrapper interface for interface that can change depending on a feature flag
+/// </summary>
+/// <typeparam name="T">Type registered with <see cref="AddScopedFeature"/> or <see cref="AddScopedSingleton"/></typeparam>
+public interface IFeature<T> where T : class
 {
     Task<T> GetFeature(FeatureContext? context = null);
 }
@@ -54,27 +80,5 @@ public class Feature<T> : IFeature<T> where T : class
     {
         return await _flagProvider.IsEnabledAsync(_flag) ? _featureA : _featureB;
     }
-}
-
-interface IToggledFeature
-{
-    string GetResult();
-}
-
-public class ToggledFeatureA : IToggledFeature
-{
-    public string GetResult()
-    {
-        return "This is from A";
-    }
-}
-
-public class ToggledFeatureB : IToggledFeature
-{
-    public string GetResult()
-    {
-        return "This is from B";
-    }
-
 }
 
