@@ -52,33 +52,3 @@ static class RegisterFeatureExtensions
     }
 }
 
-/// <summary>
-/// Wrapper interface for interface that can change depending on a feature flag
-/// </summary>
-/// <typeparam name="T">Type registered with <see cref="AddScopedFeature"/> or <see cref="AddScopedSingleton"/></typeparam>
-public interface IFeature<T> where T : class
-{
-    Task<T> GetFeature(FeatureContext? context = null);
-}
-
-public class Feature<T> : IFeature<T> where T : class
-{
-    private readonly IFeatureManager _flagProvider;
-    private string _flag;
-    private readonly T _featureA;
-    private readonly T _featureB;
-
-    public Feature(IFeatureManager flagProvider, string flag, T featureA, T featureB)
-    {
-        _flagProvider = flagProvider;
-        _flag = flag;
-        _featureA = featureA;
-        _featureB = featureB;
-    }
-
-    public async Task<T> GetFeature(FeatureContext? context = null)
-    {
-        return await _flagProvider.IsEnabledAsync(_flag) ? _featureA : _featureB;
-    }
-}
-

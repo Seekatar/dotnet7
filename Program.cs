@@ -1,10 +1,10 @@
 using dotnet7.FeatureFlags;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Collections.Specialized;
-using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -42,7 +42,7 @@ builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySc
 // end .NET 7 added for authN/Z
 
 
-builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("NewFeature");
+builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("CNTXT.KEYC");
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -94,8 +94,7 @@ client.MapGet("/step/{id:int}", Results<Ok<Step>, NotFound> (int id) =>
 })
 .WithName("GetStep");
 
-client.MapGet("/derived/{id}", Results<Ok<VariableBase>, NotFound> (int id, IService service) =>
-{
+client.MapGet("/derived/{id}", Results<Ok<VariableBase>, NotFound> (int id, IService service) => {
     var variable = service.GetVariable(id);
     if (variable is null) return TypedResults.NotFound();
     return TypedResults.Ok(variable);
@@ -159,33 +158,58 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 .WithName("ListDerived");
 // end .NET 7 added
 
-app.MapGet("/flags", async (IFeature<IToggledFeature> feature) =>
+#region Features
+
+var featureTags = new List<OpenApiTag> { new OpenApiTag() { Name = "Features" } };
+
+app.MapGet("/fm/injected", async (IFeature<IToggledFeature> feature) =>
 {
     return (await feature.GetFeature()).GetResult();
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "This result from service injected CNTXT.C",
 });
 
 var set = true;
-app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config) =>
+app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config, ILogger<Program> logger) =>
 {
     var result = new List<KeyValuePair<string, string>>();
-    for (char x = 'A'; x < 'E'; x++)
+    await foreach (var key in fm.GetFeatureNamesAsync())
     {
-        try
-        {
-            result.Add(new KeyValuePair<string, string>($"PLAIN.KEY{x}", (await fm.IsEnabledAsync($"PLAIN.KEY{x}")).ToString()));
+        try {
+            set = await fm.IsEnabledAsync(key);
+            result.Add(new KeyValuePair<string, string>(key, (await fm.IsEnabledAsync(key)).ToString()));
+        } catch (FeatureManagementException ex) {
+            if (key == "TEST.KEYQ")
+                logger.LogInformation(ex, $"Expected error getting key {key}");
+            else {
+                logger.LogError(ex, $"Error getting key {key}");
+                throw;
+            }
         }
-        catch (Exception ex)
-        {
-            result.Add(new KeyValuePair<string, string>($"PLAIN.KEY{x}", $"Exception! {ex.Message}"));
+    }
+
+    const string keyD = "PLAIN.KEYD";
+    if (!result.Any(o => o.Key == keyD)) { // will always error
+        try {
+            set = await fm.IsEnabledAsync(keyD);
+        }
+        catch (FeatureManagementException ex) {
+            logger.LogInformation(ex, $"Expected error getting key keyD");
         }
     }
 
     // Test IConfiguration not found
-    result.Add(new KeyValuePair<string, string>("WhatTimeIsIt", config["WhatTimeIsIt"] ?? "Not found in IConfiguration"));
     result.Add(new KeyValuePair<string, string>("WhatTimeIsItNot", config["WhatTimeIsItNot"] ?? "Not found in IConfiguration")); // never throws, just returns null
 
     return result.OrderBy(x => x.Key).ToArray();
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "Get the all the flags",
 });
+
 
 app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
 {
@@ -197,7 +221,7 @@ app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
         {
             result.Add(new KeyValuePair<string, string>($"Context CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}", fc)).ToString()));
         }
-        catch (Exception ex)
+        catch (FeatureManagementException ex)
         {
             result.Add(new KeyValuePair<string, string>($"Context CNTXT.KEY{x}", $"Exception! {ex.Message}"));
         }
@@ -206,24 +230,32 @@ app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
     set = !set;
 
     return result.OrderBy(x => x.Key).ToArray();
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "Gets the flags with a Context",
 });
 
-app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) =>
-{
+
+
+app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) => {
     var result = new List<KeyValuePair<string, string>>();
-    for (char x = 'A'; x < 'E'; x++)
-    {
-        try
-        {
+    for (char x = 'A'; x < 'E'; x++) {
+        try {
             result.Add(new KeyValuePair<string, string>($"No context CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}")).ToString()));
         }
-        catch (Exception ex)
-        {
+        catch (FeatureManagementException ex) {
             result.Add(new KeyValuePair<string, string>($"No context CNTXT.KEY{x}", $"Exception! {ex.Message}"));
         }
     }
     return result.OrderBy(x => x.Key).ToArray();
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "This gets no context",
 });
+
+#endregion
 
 app.Run();
 

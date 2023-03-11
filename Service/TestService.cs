@@ -9,7 +9,7 @@ file class AnotherClass
 internal class TestService : IService
 {
     static int _id = 0;
-    static Dictionary<int,VariableBase> _map = new();
+    static readonly Dictionary<int,VariableBase> _map = new();
     public int Add(VariableBase variable)
     {
         _id++;

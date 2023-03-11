@@ -226,3 +226,4 @@ There are two filters, one for context and one for no-context. All the keys are 
 
 Since FeatureManagement calls filters until one returns true. This works fine, **except** in the case where no-context is true, and you want to turn off a flag via context. Since context filter is first and returns false, it'd fall through to the no-context filter which would return true. So no short-circuiting a value of false, only true.
 
+> NOTE that the `FeatureManager` caches the values, so you have to do something to trigger it to update with your configuration provider.
