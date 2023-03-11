@@ -10,6 +10,9 @@
   - [Error with IProblemDetails](#error-with-iproblemdetails)
   - [Calling it with Auth](#calling-it-with-auth)
 - [/weatherforecast Endpoint](#weatherforecast-endpoint)
+- [FeatureManagement Test](#featuremanagement-test)
+  - [Configuration Provider](#configuration-provider)
+  - [Filters](#filters)
 
 This was created with this command
 
@@ -186,3 +189,41 @@ irm  "http://localhost:$port/net7/step/1" -Headers $headers -SkipHttpErrorCheck
 ## /weatherforecast Endpoint
 
 This is from the generated code and is not secure
+
+## FeatureManagement Test
+
+| Key        | SetIn                          | Value               |
+| ---------- | ------------------------------ | ------------------- |
+| PLAIN.KEYA | appsettings.json               | true                |
+| CNTXT.KEYA | appsettings.json               | Enabled for context |
+| PLAIN.KEYB | FeatureFlagConfiguration class | true                |
+| CNTXT.KEYB | FeatureFlagConfiguration class | Enabled for context |
+| PLAIN.KEYC | Environment                    | true                |
+| CNTXT.KEYC | Environment                    | Enabled for context |
+| CNTXT.KEYD | Added after 10 seconds[^1]     | Enabled for context |
+
+[^1]: This is to test the exception if not found
+
+### Configuration Provider
+
+I added a configuration provider to supply the values for adding the filter names and configuring the filters.
+
+`Load` gets all the keys using options passed in and calls sets the filters on all of them. If a new filter is added later, it registers it.
+
+```csharp
+ Data[$"FeatureManagement:{key}:EnabledFor:0:Name"] = "TestFeatureFilter";
+```
+
+Note the provider is only needed for registering the filters, not the value. Evaluation got to the filters.
+
+As any new keys get added, update `Data`
+
+### Filters
+
+Gets the `IFeatureFlags` injected in and on `EvaluateAsync` checks the context for the key.
+
+There are two filters, one for context and one for no-context. All the keys are configured to use them in that order.
+
+Since FeatureManagement calls filters until one returns true. This works fine, **except** in the case where no-context is true, and you want to turn off a flag via context. Since context filter is first and returns false, it'd fall through to the no-context filter which would return true. So no short-circuiting a value of false, only true.
+
+> NOTE that the `FeatureManager` caches the values, so you have to do something to trigger it to update with your configuration provider.

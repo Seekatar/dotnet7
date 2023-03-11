@@ -12,21 +12,14 @@
     },
     "https": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "FeatureManagement__TEST.KEYF__EnabledFor__0__Name" : "BlowUp"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7171;http://localhost:5070"
-    },
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "launchUrl": "swagger",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
     },
     "Docker": {
       "commandName": "Docker",
@@ -37,11 +30,12 @@
     },
     "WSL": {
       "commandName": "WSL2",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "https://localhost:7171/swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_URLS": "https://localhost:7171;http://localhost:5070"
+        "ASPNETCORE_URLS": "https://localhost:7171;http://localhost:5070",
+        "FeatureManagement__TEST.KEYQ__EnabledFor__0__Name": "BlowUp"
       },
       "distributionName": ""
     }
