@@ -1,5 +1,5 @@
+using dotnet7.FeatureFlagDemo;
 using dotnet7.FeatureFlags;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
@@ -36,15 +36,9 @@ builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySc
 // end .NET 7 added for authN/Z
 
 
-builder.Services.AddSingleton<IFeatureFlagService,FeatureFlagService>();
-builder.Services.AddSingleton<FeatureManager>();
-builder.Services.AddSingleton<IFeatureManager>( (svc) => svc.GetRequiredService<FeatureManager>());
-builder.Services.AddSingleton<IFeatureFlag>((svc) => svc.GetRequiredService<FeatureManager>());
-builder.Services.AddScoped<FeatureManagerSnapshot>();
-builder.Services.AddScoped<IFeatureManagerSnapshot>( (svc) => svc.GetRequiredService<FeatureManagerSnapshot>());
-builder.Services.AddScoped<IFeatureFlagSnapshot>((svc) => svc.GetRequiredService<FeatureManagerSnapshot>());
+builder.Services.AddFeatureFlags();
+builder.Services.AddSingletonSwitcher<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("PLAIN.KEYC");
 
-builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("PLAIN.KEYC");
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -165,9 +159,9 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
 
 var featureTags = new List<OpenApiTag> { new OpenApiTag() { Name = "Features" } };
 
-app.MapGet("/fm/injected", async (IFeature<IToggledFeature> feature) =>
+app.MapGet("/fm/injected", async (ISwitched<IToggledFeature> feature) =>
 {
-    return (await feature.GetFeature()).GetResult();
+    return (await feature.GetAsync()).GetResult();
 })
 .WithOpenApi(operation => new(operation) {
     Tags = featureTags,
@@ -217,7 +211,7 @@ app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config, ILogger<Prog
 app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
 {
     var result = new List<KeyValuePair<string, string>>();
-    var fc = new FeatureContext() { EnableMe = set };
+    var fc = new FeatureContext();
     for (char x = 'A'; x < 'E'; x++)
     {
         try
@@ -258,7 +252,7 @@ app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) =
     Summary = "This gets no context",
 });
 
-app.MapPost("/fm/{flagName}/set", (string flagName, IFeatureFlag ff) => {
+app.MapPost("/fm/{flagName}/set", (string flagName, IFeatureManagerEx ff) => {
     ff.Set(flagName, true);
 })
 .WithOpenApi(operation => new(operation) {
@@ -266,7 +260,7 @@ app.MapPost("/fm/{flagName}/set", (string flagName, IFeatureFlag ff) => {
     Summary = "Set a flag"
 });
 
-app.MapPost("/fm/{flagName}/clear", (string flagName, IFeatureFlag ff) => {
+app.MapPost("/fm/{flagName}/clear", (string flagName, IFeatureManagerEx ff) => {
     ff.Set(flagName, false);
 })
 .WithOpenApi(operation => new(operation) {

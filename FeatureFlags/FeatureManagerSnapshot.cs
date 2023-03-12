@@ -2,18 +2,19 @@
 
 namespace dotnet7.FeatureFlags;
 
-public interface IFeatureFlag : IFeatureManager {
+public interface IFeatureManagerEx : IFeatureManager
+{
     void Set(string featureName, bool value);
 }
 
-public interface IFeatureFlagSnapshot : IFeatureManagerSnapshot, IFeatureFlag {
+public interface IFeatureManagerSnapshotEx : IFeatureManagerSnapshot, IFeatureManagerEx
+{
 }
 
-
-public class FeatureManagerSnapshot : FeatureManager, IFeatureFlagSnapshot {
-
+public class FeatureManagerSnapshot : FeatureManager, IFeatureManagerSnapshotEx
+{
     public FeatureManagerSnapshot(IFeatureFlagService featureFlagService) : base(featureFlagService)
     {
-        
+
     }
 }

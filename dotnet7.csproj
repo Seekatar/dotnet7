@@ -19,4 +19,12 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\code\dotnet7\dotnet7\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\code\dotnet7\dotnet7\.editorconfig" />
+  </ItemGroup>
+
 </Project>
