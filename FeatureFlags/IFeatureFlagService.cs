@@ -2,6 +2,8 @@
 
 public interface IFeatureFlagService
 {
+    List<string> GetFlagNames();
     Task<bool> IsEnabled(string featureName);
-    Task<bool> IsEnabled(string featureName, FeatureContext context);
+    Task<bool> IsEnabled(string featureName, FeatureContext? context);
+    void Set(string featureName, bool value, FeatureContext? featureContext);
 }

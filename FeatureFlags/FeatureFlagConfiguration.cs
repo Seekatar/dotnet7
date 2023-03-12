@@ -54,7 +54,7 @@ internal class FeatureFlagConfigurationProvider : ConfigurationProvider // MS he
 
     public override void Load()
     {        
-        var toggles = FeatureFlagService.GetFlagNames( _options).Result;
+        var toggles = FeatureFlagService.LoadFlagNames( _options).Result;
         lock (Data)
         {
             toggles.ForEach(t => Data[$"{FeatureMangementPrefix}:{t}:{ContextualFilterSuffix}"] = ContextualFeatureFilter.FilterName);
