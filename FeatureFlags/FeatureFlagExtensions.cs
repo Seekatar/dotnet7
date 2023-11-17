@@ -1,4 +1,5 @@
-﻿using Microsoft.FeatureManagement;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.FeatureManagement;
 
 namespace dotnet7.FeatureFlags
 {
@@ -13,11 +14,10 @@ namespace dotnet7.FeatureFlags
                 options.IgnoreMissingFeatures = ignoreMissingFeatures;
                 options.IgnoreMissingFeatureFilters = false;
             });
-            services.AddSingleton<IFeatureFlagService, FeatureFlagService>();
 
-            services.AddFeatureManagement()
-                .AddFeatureFilter<ContextualFeatureFilter>()
-                .AddFeatureFilter<FeatureFilter>(); 
+            services.AddFeatureManagement();
+            services.RemoveAll<IFeatureManager>(); // v2 of FM doesn't do TryAddSingleton so we need to remove the default one
+            services.AddSingleton<IFeatureManager, FeatureFlagService>();
 
             return services;
         }

@@ -225,6 +225,36 @@ app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) =
     return result.OrderBy(x => x.Key).ToArray();
 });
 
+app.MapGet("/fm/snapshot", async (IFeatureManagerSnapshot fm, IConfiguration config) =>
+{
+    var result = new List<KeyValuePair<string, string>>();
+    for (char x = 'A'; x < 'E'; x++)
+    {
+        try
+        {
+            result.Add(new KeyValuePair<string, string>($"Snapshot1 CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}")).ToString()));
+        }
+        catch (Exception ex)
+        {
+            result.Add(new KeyValuePair<string, string>($"Snapshot1 CNTXT.KEY{x}", $"Exception! {ex.Message}"));
+        }
+    }
+
+    await Task.Delay(TimeSpan.FromSeconds(10));
+    for (char x = 'A'; x < 'E'; x++)
+    {
+        try
+        {
+            result.Add(new KeyValuePair<string, string>($"Snapshot2 CNTXT.KEY{x}", (await fm.IsEnabledAsync($"CNTXT.KEY{x}")).ToString()));
+        }
+        catch (Exception ex)
+        {
+            result.Add(new KeyValuePair<string, string>($"Snapshot2 CNTXT.KEY{x}", $"Exception! {ex.Message}"));
+        }
+    }
+    return result.OrderBy(x => x.Key).ToArray();
+});
+
 app.Run();
 
 internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)

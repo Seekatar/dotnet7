@@ -1,30 +1,33 @@
 ﻿using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Globalization;
 using System.Collections.Concurrent;
+using Microsoft.FeatureManagement;
 
 namespace dotnet7.FeatureFlags;
 
-public class FeatureFlagService : IFeatureFlagService
+public class FeatureFlagService : IFeatureManager
 {
     private ConcurrentDictionary<string, bool> _flags = new ConcurrentDictionary<string, bool>();
         
     public FeatureFlagService()
     {
-        var timer = new System.Timers.Timer(TimeSpan.FromSeconds(10).TotalMilliseconds);
+        var timer = new System.Timers.Timer(TimeSpan.FromSeconds(5).TotalMilliseconds);
         timer.Elapsed += (sender, args) =>
         {
             FeatureFlagConfigurationProvider.Instance?.AddFeature("CNTXT.KEYD");
+            _flags["PLAIN.KEYB"] = false;
         };
         timer.Enabled = true;
-        
+        timer.AutoReset = false;
     }
 
-    public static Task<List<string>> GetFlagNames(FeatureFlagOptions options)
+    public async IAsyncEnumerable<string> GetFeatureNamesAsync()
     {
-        return Task.FromResult(new List<string>() { "CNTXT.KEYB" });
+        await Task.Delay(0);
+        yield return "CNTXT.KEYB";
     }
 
-    public Task<bool> IsEnabled(string featureName)
+    public Task<bool> IsEnabledAsync(string featureName)
     {
         // toggle what we got before
         if (_flags.TryGetValue(featureName, out bool value))
@@ -42,9 +45,14 @@ public class FeatureFlagService : IFeatureFlagService
         return Task.FromResult(value);
     }
 
-    public Task<bool> IsEnabled(string featureName, FeatureContext mycontext)
+    public Task<bool> IsEnabledAsync<TContext>(string featureName, TContext mycontext)
     {
         // just return what the context has
-        return Task.FromResult(mycontext.EnableMe);
+        return Task.FromResult((mycontext as FeatureContext)?.EnableMe ?? false);
+    }
+
+    public static Task<List<string>> GetFlagNames(FeatureFlagOptions options)
+    {
+        return Task.FromResult(new List<string>() { "CNTXT.KEYB" });
     }
 }

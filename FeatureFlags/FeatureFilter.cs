@@ -25,20 +25,21 @@ public class FeatureFilter : IFeatureFilter
 [FilterAlias(FilterName)]
 public class ContextualFeatureFilter : IContextualFeatureFilter<FeatureContext>
 {
-    private readonly IFeatureFlagService _featureFlags;
+    // private readonly IFeatureFlagService _featureFlags;
     private readonly ILogger<ContextualFeatureFilter> _logger;
     public const string FilterName = "TestContextualFeatureFilter";
 
-    public ContextualFeatureFilter(IFeatureFlagService featureFlags, ILogger<ContextualFeatureFilter> logger)
+    public ContextualFeatureFilter( ILogger<ContextualFeatureFilter> logger)
     {
-        _featureFlags = featureFlags;
+        // _featureFlags = featureFlags;
         _logger = logger;
     }
 
-    public async Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, FeatureContext context)
+    public Task<bool> EvaluateAsync(FeatureFilterEvaluationContext evaluationContext, FeatureContext context)
     {
-        var ret = await _featureFlags.IsEnabled(evaluationContext.FeatureName, context);
+        // var ret = await _featureFlags.IsEnabled(evaluationContext.FeatureName, context);
+        var ret = false;
         _logger.LogInformation(">>>> ContextualFeatureFilter.EvaluateAsync: {featureName} {enableMe} {ret} for {client} {market}", evaluationContext.FeatureName, context.EnableMe, ret, context.ClientId, context.MarketId);
-        return ret;
+        return Task.FromResult(ret);
     }
 }
