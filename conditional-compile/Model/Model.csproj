@@ -11,4 +11,8 @@
     <!-- <Compile Remove="AppUserPartial.cs" Condition="'MODELPACK' != ''" /> -->
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Seekatar.OptionToStringGenerator" Version="0.2.1" />
+  </ItemGroup>
+
 </Project>
