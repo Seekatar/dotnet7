@@ -5,9 +5,9 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet7", "dotnet7.csproj", "{DF09402A-763A-44CC-8633-975B97ADBBA1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Model", "Model\Model.csproj", "{B96A876D-0510-42AD-AF12-B435783231CE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Model", "conditional-compile\Model\Model.csproj", "{B96A876D-0510-42AD-AF12-B435783231CE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ModelTest", "ModelTest\ModelTest.csproj", "{EBD8EC46-0016-4FC8-9FBB-A68B02E424E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ModelTest", "conditional-compileModelTest\ModelTest.csproj", "{EBD8EC46-0016-4FC8-9FBB-A68B02E424E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
