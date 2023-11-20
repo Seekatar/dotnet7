@@ -2,33 +2,53 @@
 
 namespace dotnet7.FeatureFlags;
 
+/// <summary>
+/// singleton service that maintains flag states for this demo
+/// </summary>
 public class FeatureFlagService : IFeatureFlagService {
-    private readonly ConcurrentDictionary<string, bool> _flags = new();
+    internal record Flag(bool Value = true, bool IsContext = false);
+
+    private ConcurrentDictionary<string, Flag> _flags = new(new List<KeyValuePair<string, Flag>>()  {
+        // for demo, these are flags
+        new("PLAIN.KEYA", new Flag()),
+        new("PLAIN.KEYB", new Flag(false)),
+        new("PLAIN.KEYC", new Flag()),
+        // for demo, context flags default to false if no context is provided
+        new("CNTXT.KEYA", new Flag(true, true)),
+        new("CNTXT.KEYB", new Flag(false, true)),
+        new("CNTXT.KEYC", new Flag(true, true))
+    });
 
     public FeatureFlagService() {
     }
 
-    public static Task<List<string>> GetFlagNames(FeatureFlagOptions options) {
-        return Task.FromResult(new List<string>() { "CNTXT.KEYB" });
+    public List<string> GetFlagNames() {
+        return _flags.Keys.ToList();
     }
+
 
     public Task<bool> IsEnabled(string featureName) {
-        // toggle what we got before
-        if (_flags.TryGetValue(featureName, out bool value)) {
-            if (_flags.TryUpdate(featureName, !value, value))
-                value = !value;
-            else // TODO retry?
-                throw new Exception($"Failed to update flag {featureName}");
+        if (_flags.TryGetValue(featureName, out Flag? value) && value is not null && !value.IsContext) {
+            return Task.FromResult(value.Value);
         }
-        else {
-            value = true;
-            _flags.TryAdd(featureName, true);
-        }
-        return Task.FromResult(value);
+        return Task.FromResult(false);
     }
 
-    public Task<bool> IsEnabled(string featureName, FeatureContext context) {
-        // just return what the context has
-        return Task.FromResult(context.EnableMe);
+    public Task<bool> IsEnabled<TContext>(string featureName, TContext context) {
+        if (_flags.TryGetValue(featureName, out Flag? value) && value is not null && value.IsContext) {
+            return Task.FromResult(value.Value);
+        }
+        return Task.FromResult(false);
+    }
+
+    public void Set(string featureName, bool value) {
+        var flag = new Flag(value);
+        _flags.AddOrUpdate(featureName, flag, (k, v) => flag);
+    }
+
+    public void Set<TContext>(string featureName, bool value, TContext featureContext)
+    {
+        var flag = new Flag(value, IsContext: true);
+        _flags.AddOrUpdate(featureName, flag, (k, v) => flag);
     }
 }

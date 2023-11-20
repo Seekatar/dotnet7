@@ -1,4 +1,4 @@
-﻿namespace dotnet7.FeatureFlags;
+﻿namespace dotnet7.FeatureFlagDemo;
 
 interface IToggledFeature
 {

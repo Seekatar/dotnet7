@@ -16,15 +16,15 @@ static class RegisterFeatureExtensions
     /// <param name="services"></param>
     /// <param name="flagName">flag to evaluate</param>
     /// <returns></returns>
-    public static IServiceCollection AddSingletonFeature<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
+    public static IServiceCollection AddSingletonSwitcher<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
     {
         services.AddSingleton<TEnabled>();
         services.AddSingleton<TDisabled>();
 
-        services.AddSingleton<IFeature<T>>(sp =>
+        services.AddSingleton<ISwitched<T>>(sp =>
         {
             var provider = sp.GetRequiredService<IFeatureManager>();
-            return new Feature<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
+            return new Switched<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
         });
         return services;
     }
@@ -38,15 +38,15 @@ static class RegisterFeatureExtensions
     /// <param name="services"></param>
     /// <param name="flagName">flag to evaluate</param>
     /// <returns></returns>
-    public static IServiceCollection AddScopedFeature<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
+    public static IServiceCollection AddScopedSwitcher<T, TEnabled, TDisabled>(this IServiceCollection services, string flagName) where T : class where TEnabled : class, T where TDisabled : class, T
     {
         services.AddScoped<TEnabled>();
         services.AddScoped<TDisabled>();
 
-        services.AddScoped<IFeature<T>>(sp =>
+        services.AddScoped<ISwitched<T>>(sp =>
         {
             var provider = sp.GetRequiredService<IFeatureManagerSnapshot>();
-            return new Feature<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
+            return new Switched<T>(provider, flagName, sp.GetRequiredService<TEnabled>(), sp.GetRequiredService<TDisabled>());
         });
         return services;
     }

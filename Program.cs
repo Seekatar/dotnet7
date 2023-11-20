@@ -1,5 +1,5 @@
+using dotnet7.FeatureFlagDemo;
 using dotnet7.FeatureFlags;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.FeatureManagement;
@@ -8,10 +8,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-// add test values for feature management configured in env
-Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__PLAIN.KEYC", "true");
-Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__CNTXT.KEYC__EnabledFor__0__Name", ContextualFeatureFilter.FilterName);
-Environment.SetEnvironmentVariable($"{FeatureFlagConfigurationProvider.FeatureMangementPrefix}__CNTXT.KEYC__EnabledFor__1__Name", FeatureFilter.FilterName);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +19,6 @@ builder.Services.AddSwaggerGen();
 // .NET 7 added for problem details
 builder.Services.AddProblemDetails();
 
-// .NET 7 added for feature flags
-builder.Services.AddFeatureFlags(builder.Configuration);
 
 // .NET 7 added for AUTHN/Z
 const string AdminPolicyName = "adminPolicy";
@@ -42,7 +36,9 @@ builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySc
 // end .NET 7 added for authN/Z
 
 
-builder.Services.AddSingletonFeature<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("CNTXT.KEYC");
+builder.Services.AddFeatureFlags();
+builder.Services.AddSingletonSwitcher<IToggledFeature, ToggledFeatureA, ToggledFeatureB>("PLAIN.KEYC");
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -57,6 +53,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.MapControllers();
 
+#region dotnet7_features
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -156,15 +153,15 @@ client.MapGet("/string/{id:int}", Results<Ok<string>, NotFound> (int id) =>
     };
 })
 .WithName("ListDerived");
-// end .NET 7 added
+#endregion
 
 #region Features
 
 var featureTags = new List<OpenApiTag> { new OpenApiTag() { Name = "Features" } };
 
-app.MapGet("/fm/injected", async (IFeature<IToggledFeature> feature) =>
+app.MapGet("/fm/injected", async (ISwitched<IToggledFeature> feature) =>
 {
-    return (await feature.GetFeature()).GetResult();
+    return (await feature.GetAsync()).GetResult();
 })
 .WithOpenApi(operation => new(operation) {
     Tags = featureTags,
@@ -214,7 +211,7 @@ app.MapGet("/fm", async (IFeatureManager fm, IConfiguration config, ILogger<Prog
 app.MapGet("/fm/context", async (IFeatureManager fm, IConfiguration config) =>
 {
     var result = new List<KeyValuePair<string, string>>();
-    var fc = new FeatureContext() { EnableMe = set };
+    var fc = new FeatureContext();
     for (char x = 'A'; x < 'E'; x++)
     {
         try
@@ -253,6 +250,30 @@ app.MapGet("/fm/no-context", async (IFeatureManager fm, IConfiguration config) =
 .WithOpenApi(operation => new(operation) {
     Tags = featureTags,
     Summary = "This gets no context",
+});
+
+app.MapPost("/fm/{flagName}/set", (string flagName, IFeatureManagerEx ff) => {
+    ff.Set(flagName, true);
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "Set a flag"
+});
+
+app.MapPost("/fm/{flagName}/clear", (string flagName, IFeatureManagerEx ff) => {
+    ff.Set(flagName, false);
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "Set a flag"
+});
+
+app.MapGet("/fm/snapshot/{flagName}", (string flagName, IFeatureManagerSnapshot ff) => {
+    return ff.IsEnabledAsync(flagName);
+})
+.WithOpenApi(operation => new(operation) {
+    Tags = featureTags,
+    Summary = "Get snapshot flag"
 });
 
 #endregion
